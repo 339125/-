@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CryptoQuant Pro - Pine Script 策略编辑器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #131722;
+            --bg-tertiary: #1e222d;
+            --color-primary: #2962FF;
+            --color-up: #26A69A;
+            --color-down: #EF5350;
+            --text-primary: #D1D4DC;
+            --text-secondary: #787B86;
+            --border-color: #363a45;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 编辑器侧边栏 */
+        .editor-sidebar {
+            width: 350px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-primary), #00B8D9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding: 16px 20px 8px;
+        }
+
+        /* 策略模板 */
+        .template-list {
+            padding: 0 16px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .template-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .template-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .template-card.active {
+            border-color: var(--color-primary);
+            background: rgba(41, 98, 255, 0.1);
+        }
+
+        .template-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .template-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* 参数配置 */
+        .param-section {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .param-group {
+            margin-bottom: 12px;
+        }
+
+        .param-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .param-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .param-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        /* 编辑器区域 */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-toolbar {
+            height: 50px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1E53E5;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .btn-success {
+            background: var(--color-up);
+            color: white;
+        }
+
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .CodeMirror {
+            height: 100% !important;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .CodeMirror-gutters {
+            background: var(--bg-secondary) !important;
+            border-right: 1px solid var(--border-color) !important;
+        }
+
+        .CodeMirror-linenumber {
+            color: var(--text-secondary) !important;
+        }
+
+        /* 错误提示 */
+        .error-panel {
+            background: rgba(239, 83, 80, 0.1);
+            border-top: 1px solid var(--color-down);
+            padding: 12px 20px;
+            display: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .error-panel.show {
+            display: block;
+        }
+
+        .error-title {
+            color: var(--color-down);
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .error-message {
+            color: var(--text-secondary);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        /* 右侧面板 */
+        .right-panel {
+            width: 380px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .panel-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .panel-tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        /* 指标卡片 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 14px;
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        .metric-positive {
+            color: var(--color-up);
+        }
+
+        .metric-negative {
+            color: var(--color-down);
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            flex: 1;
+            background: var(--bg-primary);
+            position: relative;
+            min-height: 300px;
+        }
+
+        #mainChart {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 控制栏 */
+        .control-bar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: var(--border-color);
+        }
+
+        .control-btn.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        /* 信号标记 */
+        .signal-marker {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+        }
+
+        .signal-marker.buy {
+            border-bottom: 10px solid var(--color-up);
+        }
+
+        .signal-marker.sell {
+            border-top: 10px solid var(--color-down);
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 28px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            border-color: var(--color-up);
+        }
+
+        .toast.error {
+            border-color: var(--color-down);
+        }
+
+        .toast.info {
+            border-color: var(--color-primary);
+        }
+
+        /* Pine Script 语法高亮 */
+        .pine-keyword {
+            color: #C792EA;
+        }
+        .pine-builtin {
+            color: #82AAFF;
+        }
+        .pine-number {
+            color: #F78C6C;
+        }
+        .pine-string {
+            color: #C3E88D;
+        }
+        .pine-comment {
+            color: #546E7A;
+            font-style: italic;
+        }
+        .pine-operator {
+            color: #89DDFF;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .editor-sidebar {
+                width: 300px;
+            }
+            .right-panel {
+                width: 320px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .editor-sidebar,
+            .right-panel {
+                width: 100%;
+                height: auto;
+            }
+            .editor-wrapper {
+                flex-direction: column;
+            }
+            .editor-sidebar {
+                height: auto;
+                max-height: 40vh;
+            }
+            .right-panel {
+                height: auto;
+                max-height: 40vh;
+            }
+        }
+
+        /* 加载动画 */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧编辑器侧边栏 -->
+        <aside class="editor-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">📊</div>
+                    <span>CryptoQuant Pro</span>
+                </div>
+            </div>
+
+            <div class="section-title">📝 Pine Script 模板</div>
+            <div class="template-list">
+                <div class="template-card active" data-template="ma_cross">
+                    <div class="template-name">均线交叉策略</div>
+                    <div class="template-desc">Short/Long MA Crossover</div>
+                </div>
+                <div class="template-card" data-template="rsi_strategy">
+                    <div class="template-name">RSI 超买超卖</div>
+                    <div class="template-desc">RSI Overbought/Oversold</div>
+                </div>
+                <div class="template-card" data-template="macd_strategy">
+                    <div class="template-name">MACD 策略</div>
+                    <div class="template-desc">MACD Signal Crossover</div>
+                </div>
+                <div class="template-card" data-template="bb_strategy">
+                    <div class="template-name">布林带策略</div>
+                    <div class="template-desc">Bollinger Bands Bounce</div>
+                </div>
+                <div class="template-card" data-template="custom">
+                    <div class="template-name">自定义策略</div>
+                    <div class="template-desc">Start from scratch</div>
+                </div>
+            </div>
+
+            <div class="param-section">
+                <div class="section-title" style="padding: 0 0 12px 0;">⚙️ 策略参数</div>
+                <div class="param-group">
+                    <div class="param-label">交易对</div>
+                    <select class="param-input" id="symbolSelect">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">时间周期</div>
+                    <select class="param-input" id="intervalSelect">
+                        <option value="1m">1 分钟</option>
+                        <option value="5m">5 分钟</option>
+                        <option value="15m">15 分钟</option>
+                        <option value="1h" selected>1 小时</option>
+                        <option value="4h">4 小时</option>
+                        <option value="1d">1 天</option>
+                    </select>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">初始资金 (USDT)</div>
+                    <input type="number" class="param-input" id="initialCapital" value="10000">
+                </div>
+            </div>
+
+            <div style="padding: 16px 20px; margin-top: auto;">
+                <button class="btn btn-primary" style="width: 100%;" id="runBacktestBtn" onclick="runBacktest()">
+                    <span>▶</span> 运行回测
+                </button>
+            </div>
+        </aside>
+
+        <!-- 主编辑器区域 -->
+        <main class="editor-container">
+            <div class="editor-toolbar">
+                <button class="btn btn-secondary" onclick="loadTemplate('ma_cross')">
+                    📋 加载模板
+                </button>
+                <button class="btn btn-secondary" onclick="clearEditor()">
+                    🗑️ 清空
+                </button>
+                <button class="btn btn-success" onclick="validateScript()">
+                    ✓ 验证
+                </button>
+                <div style="flex: 1;"></div>
+                <span style="color: var(--text-secondary); font-size: 12px;">
+                    Pine Script v5
+                </span>
+            </div>
+
+            <div class="editor-wrapper">
+                <textarea id="pineEditor"></textarea>
+            </div>
+
+            <div class="error-panel" id="errorPanel">
+                <div class="error-title">⚠️ 编译错误</div>
+                <div class="error-message" id="errorMessage"></div>
+            </div>
+        </main>
+
+        <!-- 右侧结果面板 -->
+        <aside class="right-panel">
+            <div class="panel-tabs">
+                <div class="panel-tab active" data-tab="metrics">📈 指标</div>
+                <div class="panel-tab" data-tab="trades">📋 交易</div>
+                <div class="panel-tab" data-tab="chart">📊 图表</div>
+            </div>
+
+            <div class="panel-content">
+                <!-- 指标面板 -->
+                <div class="tab-content active" id="metricsContent">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">总收益率</div>
+                            <div class="metric-value metric-positive" id="totalReturn">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">夏普比率</div>
+                            <div class="metric-value" id="sharpeRatio">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">最大回撤</div>
+                            <div class="metric-value metric-negative" id="maxDrawdown">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">胜率</div>
+                            <div class="metric-value" id="winRate">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">总交易数</div>
+                            <div class="metric-value" id="totalTrades">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">盈亏比</div>
+                            <div class="metric-value" id="profitFactor">--</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">📊 资金曲线</div>
+                    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px; height: 150px; margin-bottom: 16px;">
+                        <canvas id="equityChart" style="width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+
+                <!-- 交易面板 -->
+                <div class="tab-content" id="tradesContent" style="display: none;">
+                    <div class="trade-list" id="tradeList">
+                        <p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">
+                            运行回测后查看交易记录
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 图表面板 -->
+                <div class="tab-content" id="chartContent" style="display: none;">
+                    <div class="chart-container" style="height: 300px; background: var(--bg-tertiary); border-radius: 8px;">
+                        <canvas id="mainChart"></canvas>
+                        <div class="control-bar">
+                            <button class="control-btn active" data-ind="ma">MA</button>
+                            <button class="control-btn" data-ind="rsi">RSI</button>
+                            <button class="control-btn" data-ind="volume">VOL</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        // 全局状态
+        const state = {
+            editor: null,
+            currentTemplate: 'ma_cross',
+            backtestResults: null,
+            signals: [],
+            klines: []
+        };
+
+        // Pine Script 模板
+        const pineTemplates = {
+            ma_cross: `//@version=5
+strategy("均线交叉策略", overlay=true)
+
+// 输入参数
+fastLength = input.int(10, title="快速均线周期")
+slowLength = input.int(30, title="慢速均线周期")
+src = input(close, title="数据源")
+
+// 计算指标
+fastMA = ta.sma(src, fastLength)
+slowMA = ta.sma(src, slowLength)
+
+// 绘制均线
+plot(fastMA, color=color.blue, title="快速MA")
+plot(slowMA, color=color.orange, title="慢速MA")
+
+// 交易信号
+longCondition = ta.crossover(fastMA, slowMA)
+shortCondition = ta.crossunder(fastMA, slowMA)
+
+// 执行交易
+if (longCondition)
+    strategy.entry(id="Long", direction=strategy.long)
+
+if (shortCondition)
+    strategy.close(id="Long")`,
+
+            rsi_strategy: `//@version=5
+strategy("RSI 超买超卖策略", overlay=false)
+
+// 输入参数
+rsiLength = input.int(14, title="RSI 周期")
+overbought = input.float(70, title="超买线")
+oversold = input.float(30, title="超卖线")
+
+// 计算 RSI
+rsiValue = ta.rsi(close, rsiLength)
+
+// 绘制
+plot(rsiValue, color=color.purple, title="RSI")
+hline(overbought, color=color.red, linestyle=hline.style_dashed)
+hline(oversold, color=color.green, linestyle=hline.style_dashed)
+
+// 交易信号
+longCondition = ta.crossover(rsiValue, oversold)
+shortCondition = ta.crossunder(rsiValue, overbought)
+
+// 执行交易
+if (longCondition)
+    strategy.entry(id="Long", direction=strategy.long)
+
+if (shortCondition)
+    strategy.close(id="Long")`,
+
+            macd_strategy: `//@version=5
+strategy("MACD 策略", overlay=false)
+
+// 输入参数
+fastLength = input.int(12, title="快速周期")
+slowLength = input.int(26, title="慢速周期")
+signalLength = input.int(9, title="信号周期")
+
+// 计算 MACD
+[macdLine, signalLine, histLine] = ta.macd(close, fastLength, slowLength, signalLength)
+
+// 绘制
+plot(macdLine, color=color.blue, title="MACD")
+plot(signalLine, color=color.orange, title="Signal")
+plot(histLine, color=color.green, title="Histogram", style=plot.style_histogram)
+
+// 交易信号
+longCondition = ta.crossover(macdLine, signalLine)
+shortCondition = ta.crossunder(macdLine, signalLine)
+
+// 执行交易
+if (longCondition)
+    strategy.entry(id="Long", direction=strategy.long)
+
+if (shortCondition)
+    strategy.close(id="Long")`,
+
+            bb_strategy: `//@version=5
+strategy("布林带策略", overlay=true)
+
+// 输入参数
+bbLength = input.int(20, title="布林带周期")
+bbMult = input.float(2.0, title="布林带倍数")
+
+// 计算布林带
+[bbandMiddle, bbandUpper, bbandLower] = ta.bb(close, bbLength, bbMult)
+
+// 绘制
+plot(bbandMiddle, color=color.blue, title="BB Middle")
+p1 = plot(bbandUpper, color=color.red, title="BB Upper")
+p2 = plot(bbandLower, color=color.green, title="BB Lower")
+fill(p1, p2, color=color.new(color.blue, 90), title="BB Background")
+
+// 交易信号
+longCondition = close < bbandLower
+shortCondition = close > bbandUpper
+
+// 执行交易
+if (longCondition)
+    strategy.entry(id="Long", direction=strategy.long)
+
+if (shortCondition)
+    strategy.close(id="Long")`,
+
+            custom: `//@version=5
+strategy("自定义策略", overlay=true)
+
+// ==================== 在这里编写你的策略 ====================
+
+// 输入参数
+length = input.int(14, title="周期")
+
+// 计算你的指标
+value = ta.sma(close, length)
+
+// 绘制
+plot(value, color=color.blue, title="指标")
+
+// 买入条件 (修改这里)
+longCondition = ta.crossover(close, value)
+
+// 卖出条件 (修改这里)
+shortCondition = ta.crossunder(close, value)
+
+// ==================== 交易执行 ====================
+if (longCondition)
+    strategy.entry(id="Long", direction=strategy.long)
+
+if (shortCondition)
+    strategy.close(id="Long")`
+        };
+
+        // 初始化 CodeMirror 编辑器
+        document.addEventListener('DOMContentLoaded', () => {
+            state.editor = CodeMirror.fromTextArea(document.getElementById('pineEditor'), {
+                mode: 'python',
+                theme: 'monokai',
+                lineNumbers: true,
+                indentUnit: 4,
+                tabSize: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                styleActiveLine: true,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                extraKeys: {
+                    'Ctrl-S': function() { saveScript(); },
+                    'Cmd-S': function() { saveScript(); },
+                    'Ctrl-Enter': function() { runBacktest(); },
+                    'Cmd-Enter': function() { runBacktest(); }
+                }
+            });
+
+            state.editor.setValue(pineTemplates.ma_cross);
+            state.editor.setSize('100%', '100%');
+
+            setupEventListeners();
+            generateSampleData();
+            drawChart();
+            drawEquityChart();
+        });
+
+        // 事件监听
+        function setupEventListeners() {
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const template = card.dataset.template;
+                    loadTemplate(template);
+                });
+            });
+
+            document.querySelectorAll('.panel-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + 'Content').style.display = 'block';
+                });
+            });
+
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.classList.toggle('active');
+                });
+            });
+        }
+
+        // 加载模板
+        function loadTemplate(templateName) {
+            document.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-template="${templateName}"]`).classList.add('active');
+
+            state.currentTemplate = templateName;
+            state.editor.setValue(pineTemplates[templateName]);
+            showToast('已加载: ' + templateName, 'info');
+        }
+
+        // 清空编辑器
+        function clearEditor() {
+            state.editor.setValue('');
+            showToast('编辑器已清空', 'info');
+        }
+
+        // 验证脚本
+        function validateScript() {
+            const code = state.editor.getValue();
+
+            if (!code.includes('//@version=')) {
+                showError('缺少版本声明，请添加 //@version=5');
+                return false;
+            }
+
+            if (!code.includes('strategy') && !code.includes('indicator')) {
+                showError('缺少 strategy 或 indicator 声明');
+                return false;
+            }
+
+            hideError();
+            showToast('✅ 脚本验证通过', 'success');
+            return true;
+        }
+
+        // 显示错误
+        function showError(message) {
+            const panel = document.getElementById('errorPanel');
+            const msg = document.getElementById('errorMessage');
+            msg.textContent = message;
+            panel.classList.add('show');
+        }
+
+        // 隐藏错误
+        function hideError() {
+            document.getElementById('errorPanel').classList.remove('show');
+        }
+
+        // 运行回测
+        async function runBacktest() {
+            const btn = document.getElementById('runBacktestBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> 运行中...';
+
+            const code = state.editor.getValue();
+
+            if (!validateScript()) {
+                btn.disabled = false;
+                btn.innerHTML = '<span>▶</span> 运行回测';
+                return;
+            }
+
+            try {
+                await simulateBacktest(code);
+                showToast('✅ 回测完成！', 'success');
+            } catch (error) {
+                showError('回测执行失败: ' + error.message);
+                showToast('❌ 回测失败', 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>▶</span> 运行回测';
+        }
+
+        // 模拟回测执行
+        async function simulateBacktest(code) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // 解析 Pine Script
+                    const signals = parsePineScript(code);
+
+                    // 生成模拟结果
+                    const results = {
+                        totalReturn: (Math.random() - 0.3) * 50,
+                        sharpeRatio: (Math.random() - 0.3) * 2,
+                        maxDrawdown: -(Math.random() * 20),
+                        winRate: 40 + Math.random() * 30,
+                        totalTrades: Math.floor(50 + Math.random() * 150),
+                        profitFactor: 0.8 + Math.random() * 1.5,
+                        equityCurve: generateEquityCurve(100),
+                        trades: generateTrades(signals)
+                    };
+
+                    state.backtestResults = results;
+                    state.signals = signals;
+
+                    // 更新 UI
+                    updateMetricsDisplay(results);
+                    drawEquityChart();
+                    updateTradeList(results.trades);
+                    drawChart();
+
+                    resolve(results);
+                }, 1500);
+            });
+        }
+
+        // 解析 Pine Script (简化版)
+        function parsePineScript(code) {
+            const signals = [];
+            const shortPeriod = extractNumber(code, /fastLength\s*=\s*input\.int\((\d+)/) || 10;
+            const longPeriod = extractNumber(code, /slowLength\s*=\s*input\.int\((\d+)/) || 30;
+
+            // 模拟信号生成
+            const numSignals = Math.floor(20 + Math.random() * 80);
+            for (let i = 0; i < numSignals; i++) {
+                const timestamp = Date.now() - (numSignals - i) * 4 * 60 * 60 * 1000;
+                const isBuy = Math.random() > 0.5;
+
+                signals.push({
+                    timestamp,
+                    side: isBuy ? 'BUY' : 'SELL',
+                    price: 40000 + Math.random() * 5000,
+                    type: isBuy ? 'crossover' : 'crossunder'
+                });
+            }
+
+            return signals;
+        }
+
+        // 提取数字
+        function extractNumber(code, pattern) {
+            const match = code.match(pattern);
+            return match ? parseInt(match[1]) : null;
+        }
+
+        // 生成资金曲线
+        function generateEquityCurve(points) {
+            const curve = [];
+            let value = parseFloat(document.getElementById('initialCapital').value) || 10000;
+
+            for (let i = 0; i < points; i++) {
+                const change = (Math.random() - 0.45) * 0.02;
+                value *= (1 + change);
+                curve.push(value);
+            }
+
+            return curve;
+        }
+
+        // 生成交易列表
+        function generateTrades(signals) {
+            return signals.filter(s => s.side === 'SELL').map(s => ({
+                timestamp: s.timestamp,
+                side: 'SELL',
+                price: s.price,
+                quantity: 0.01 + Math.random() * 0.1,
+                pnl: (Math.random() - 0.3) * 200
+            }));
+        }
+
+        // 更新指标显示
+        function updateMetricsDisplay(results) {
+            document.getElementById('totalReturn').textContent =
+                (results.totalReturn >= 0 ? '+' : '') + results.totalReturn.toFixed(2) + '%';
+            document.getElementById('totalReturn').className =
+                'metric-value ' + (results.totalReturn >= 0 ? 'metric-positive' : 'metric-negative');
+
+            document.getElementById('sharpeRatio').textContent = results.sharpeRatio.toFixed(2);
+            document.getElementById('maxDrawdown').textContent = results.maxDrawdown.toFixed(2) + '%';
+            document.getElementById('winRate').textContent = results.winRate.toFixed(2) + '%';
+            document.getElementById('totalTrades').textContent = results.totalTrades;
+            document.getElementById('profitFactor').textContent = results.profitFactor.toFixed(2);
+        }
+
+        // 更新交易列表
+        function updateTradeList(trades) {
+            const list = document.getElementById('tradeList');
+
+            if (!trades || trades.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px 0;">暂无交易记录</p>';
+                return;
+            }
+
+            list.innerHTML = trades.map(trade => `
+                <div class="trade-item" style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="color: ${trade.side === 'BUY' ? 'var(--color-up)' : 'var(--color-down)'}; font-weight: bold;">
+                                ${trade.side === 'BUY' ? '买入' : '卖出'}
+                            </span>
+                            <span style="margin-left: 8px; color: var(--text-secondary); font-size: 12px;">
+                                ${new Date(trade.timestamp).toLocaleDateString('zh-CN')}
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: bold;">$${trade.price.toFixed(2)}</div>
+                            <div style="font-size: 12px; color: ${trade.pnl >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">
+                                ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)} USDT
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 生成示例 K 线数据
+        function generateSampleData() {
+            const klines = [];
+            let basePrice = 42000;
+            const count = 200;
+            const interval = 4 * 60 * 60 * 1000;
+
+            for (let i = 0; i < count; i++) {
+                const change = (Math.random() - 0.48) * 0.03;
+                const open = basePrice;
+                const close = basePrice * (1 + change);
+                const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+                const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+                const volume = Math.random() * 1000 + 500;
+
+                klines.push({
+                    timestamp: Date.now() - (count - i) * interval,
+                    open, high, low, close, volume
+                });
+
+                basePrice = close;
+            }
+
+            state.klines = klines;
+        }
+
+        // 绘制图表
+        function drawChart() {
+            const canvas = document.getElementById('mainChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth * window.devicePixelRatio;
+            canvas.height = container.clientHeight * window.devicePixelRatio;
+            canvas.style.width = container.clientWidth + 'px';
+            canvas.style.height = container.clientHeight + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (state.klines.length === 0) return;
+
+            const padding = { top: 20, right: 60, bottom: 30, left: 10 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const visibleBars = Math.min(80, state.klines.length);
+            const barWidth = chartWidth / visibleBars * 0.7;
+            const barSpacing = chartWidth / visibleBars;
+
+            let minPrice = Infinity, maxPrice = -Infinity;
+            for (let i = 0; i < visibleBars; i++) {
+                const k = state.klines[i];
+                minPrice = Math.min(minPrice, k.low);
+                maxPrice = Math.max(maxPrice, k.high);
+            }
+
+            const priceRange = maxPrice - minPrice;
+            minPrice -= priceRange * 0.05;
+            maxPrice += priceRange * 0.05;
+
+            const priceToY = (price) => padding.top + chartHeight * (1 - (price - minPrice) / (maxPrice - minPrice));
+
+            // 绘制网格
+            ctx.strokeStyle = '#1e222d';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (chartHeight * i / 5);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                const price = maxPrice - (maxPrice - minPrice) * i / 5;
+                ctx.fillStyle = '#787b86';
+                ctx.font = '11px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('$' + price.toFixed(0), width - padding.right + 5, y + 4);
+            }
+
+            // 绘制 K 线
+            for (let i = 0; i < visibleBars; i++) {
+                const k = state.klines[i];
+                const x = padding.left + i * barSpacing + barSpacing / 2;
+                const isUp = k.close >= k.open;
+                const color = isUp ? '#26A69A' : '#EF5350';
+
+                const openY = priceToY(k.open);
+                const closeY = priceToY(k.close);
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.max(1, Math.abs(closeY - openY));
+
+                ctx.fillStyle = color;
+                ctx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyHeight);
+
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.moveTo(x, priceToY(k.high));
+                ctx.lineTo(x, priceToY(k.low));
+                ctx.stroke();
+            }
+
+            // 绘制交易信号
+            for (const signal of state.signals) {
+                const index = state.klines.findIndex(k =>
+                    Math.abs(k.timestamp - signal.timestamp) < 4 * 60 * 60 * 1000
+                );
+
+                if (index >= 0 && index < visibleBars) {
+                    const x = padding.left + index * barSpacing + barSpacing / 2;
+                    const y = priceToY(signal.price);
+
+                    ctx.beginPath();
+                    if (signal.side === 'BUY') {
+                        ctx.fillStyle = '#26A69A';
+                        ctx.moveTo(x, y - 12);
+                        ctx.lineTo(x - 8, y);
+                        ctx.lineTo(x + 8, y);
+                    } else {
+                        ctx.fillStyle = '#EF5350';
+                        ctx.moveTo(x, y + 12);
+                        ctx.lineTo(x - 8, y);
+                        ctx.lineTo(x + 8, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        // 绘制资金曲线
+        function drawEquityChart() {
+            const canvas = document.getElementById('equityChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (!state.backtestResults || !state.backtestResults.equityCurve.length) return;
+
+            const values = state.backtestResults.equityCurve;
+            const minVal = Math.min(...values);
+            const maxVal = Math.max(...values);
+            const range = maxVal - minVal || 1;
+
+            const chartWidth = width - 30;
+            const chartHeight = height - 20;
+            const stepX = chartWidth / (values.length - 1);
+
+            const xToY = (val) => 10 + chartHeight * (1 - (val - minVal) / range);
+
+            // 渐变填充
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(41, 98, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(41, 98, 255, 0)');
+
+            ctx.beginPath();
+            ctx.moveTo(20, height - 10);
+            for (let i = 0; i < values.length; i++) {
+                const x = 20 + i * stepX;
+                const y = xToY(values[i]);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(20 + (values.length - 1) * stepX, height - 10);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // 线条
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < values.length; i++) {
+                const x = 20 + i * stepX;
+                const y = xToY(values[i]);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 监听窗口大小变化
+        window.addEventListener('resize', () => {
+            drawChart();
+            drawEquityChart();
+        });
+    </script>
+</body>
+</html>
