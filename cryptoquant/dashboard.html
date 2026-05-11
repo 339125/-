@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CryptoQuant - 量化交易可视化平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #131722;
+            --bg-secondary: #1e222d;
+            --bg-tertiary: #2a2e39;
+            --color-primary: #2962FF;
+            --color-up: #26A69A;
+            --color-down: #EF5350;
+            --text-primary: #D1D4DC;
+            --text-secondary: #787B86;
+            --border-color: #363a45;
+            --grid-color: #1e222d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-primary), #00B8D9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .strategy-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .strategy-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .strategy-card.active {
+            border-color: var(--color-primary);
+            background: rgba(41, 98, 255, 0.1);
+        }
+
+        .strategy-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .strategy-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .param-group {
+            margin-bottom: 12px;
+        }
+
+        .param-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .param-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .param-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+
+        /* 顶部栏 */
+        .top-bar {
+            height: 60px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .pair-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pair-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .pair-price {
+            font-size: 24px;
+            font-weight: bold;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        .price-up {
+            color: var(--color-up);
+        }
+
+        .price-down {
+            color: var(--color-down);
+        }
+
+        .time-selector {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .time-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .time-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .time-btn.active {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1E53E5;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        /* 图表区域 */
+        .chart-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        #mainChart {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+            min-width: 180px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .tooltip-label {
+            color: var(--text-secondary);
+        }
+
+        .tooltip-value {
+            font-weight: 600;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        /* 指标面板 */
+        .indicator-panels {
+            height: 120px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-shrink: 0;
+        }
+
+        .indicator-panel {
+            flex: 1;
+            border-right: 1px solid var(--border-color);
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .indicator-panel:last-child {
+            border-right: none;
+        }
+
+        .indicator-title {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .indicator-canvas {
+            width: 100%;
+            height: 80px;
+        }
+
+        /* 右侧面板 */
+        .right-panel {
+            width: 320px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .panel-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .panel-tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        /* 指标卡片 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        .metric-positive {
+            color: var(--color-up);
+        }
+
+        .metric-negative {
+            color: var(--color-down);
+        }
+
+        /* 交易列表 */
+        .trade-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .trade-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .trade-side {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .trade-side.buy {
+            background: rgba(38, 166, 154, 0.2);
+            color: var(--color-up);
+        }
+
+        .trade-side.sell {
+            background: rgba(239, 83, 80, 0.2);
+            color: var(--color-down);
+        }
+
+        .trade-info {
+            flex: 1;
+        }
+
+        .trade-pair {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .trade-date {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .trade-value {
+            text-align: right;
+        }
+
+        .trade-price {
+            font-weight: 600;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        .trade-pnl {
+            font-size: 12px;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        /* 持仓列表 */
+        .position-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .position-item {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .position-symbol {
+            font-weight: bold;
+        }
+
+        .position-side {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .position-side.long {
+            background: rgba(38, 166, 154, 0.2);
+            color: var(--color-up);
+        }
+
+        .position-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .position-detail {
+            text-align: center;
+        }
+
+        .position-detail-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .position-detail-value {
+            font-size: 13px;
+            font-weight: 600;
+            font-family: "DIN Alternate", "Roboto Mono", monospace;
+        }
+
+        /* 移动端样式 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100%;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                display: none;
+            }
+
+            .sidebar-overlay.open {
+                display: block;
+            }
+
+            .right-panel {
+                position: fixed;
+                right: -320px;
+                top: 0;
+                height: 100%;
+                z-index: 1000;
+                transition: right 0.3s;
+            }
+
+            .right-panel.open {
+                right: 0;
+            }
+
+            .mobile-controls {
+                display: flex;
+                gap: 8px;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            .top-bar {
+                padding: 0 12px;
+                gap: 10px;
+            }
+
+            .pair-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .pair-price {
+                font-size: 18px;
+            }
+
+            .time-selector {
+                display: none;
+            }
+
+            .mobile-time-selector {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 4px;
+                padding: 8px 12px;
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+            }
+        }
+
+        .mobile-controls,
+        .mobile-time-selector {
+            display: none;
+        }
+
+        /* 移动端底部导航 */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 0;
+            z-index: 1001;
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-nav {
+                display: flex;
+                justify-content: space-around;
+            }
+
+            .main-content {
+                padding-bottom: 60px;
+            }
+
+            .indicator-panels {
+                height: 100px;
+            }
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--color-primary);
+        }
+
+        .mobile-nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .mobile-nav-label {
+            font-size: 10px;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* 动画效果 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 24px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--color-up);
+        }
+
+        .toast.error {
+            border-color: var(--color-down);
+        }
+
+        /* 全屏图表模式 */
+        .fullscreen-chart .sidebar,
+        .fullscreen-chart .right-panel {
+            display: none;
+        }
+
+        .fullscreen-chart .main-content {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">📊</div>
+                    <span>CryptoQuant</span>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">交易对</div>
+                <div class="strategy-card active" data-pair="BTCUSDT">
+                    <div class="strategy-name">BTC/USDT</div>
+                    <div class="strategy-desc">比特币 - 稳定币</div>
+                </div>
+                <div class="strategy-card" data-pair="ETHUSDT">
+                    <div class="strategy-name">ETH/USDT</div>
+                    <div class="strategy-desc">以太坊 - 稳定币</div>
+                </div>
+                <div class="strategy-card" data-pair="BNBUSDT">
+                    <div class="strategy-name">BNB/USDT</div>
+                    <div class="strategy-desc">币安币 - 稳定币</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">选择策略</div>
+                <div class="strategy-card active" data-strategy="ma_crossover">
+                    <div class="strategy-name">均线交叉策略</div>
+                    <div class="strategy-desc">MA Short/Long Crossover</div>
+                </div>
+                <div class="strategy-card" data-strategy="rsi">
+                    <div class="strategy-name">RSI 超买超卖</div>
+                    <div class="strategy-desc">Relative Strength Index</div>
+                </div>
+                <div class="strategy-card" data-strategy="macd">
+                    <div class="strategy-name">MACD 策略</div>
+                    <div class="strategy-desc">Moving Average Convergence Divergence</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">策略参数</div>
+                <div class="param-group">
+                    <div class="param-label">短期周期</div>
+                    <input type="number" class="param-input" id="shortPeriod" value="10">
+                </div>
+                <div class="param-group">
+                    <div class="param-label">长期周期</div>
+                    <input type="number" class="param-input" id="longPeriod" value="30">
+                </div>
+                <div class="param-group">
+                    <div class="param-label">初始资金 (USDT)</div>
+                    <input type="number" class="param-input" id="initialCapital" value="10000">
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="section-title">时间范围</div>
+                <div class="param-group">
+                    <div class="param-label">开始日期</div>
+                    <input type="date" class="param-input" id="startDate" value="2024-01-01">
+                </div>
+                <div class="param-group">
+                    <div class="param-label">结束日期</div>
+                    <input type="date" class="param-input" id="endDate" value="2024-12-31">
+                </div>
+            </div>
+
+            <div class="sidebar-section" style="margin-top: auto;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="runBacktest()">
+                    ▶ 运行回测
+                </button>
+            </div>
+        </aside>
+
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="mobile-time-selector">
+                <button class="time-btn" data-time="1m">1分钟</button>
+                <button class="time-btn" data-time="5m">5分钟</button>
+                <button class="time-btn" data-time="15m">15分钟</button>
+                <button class="time-btn" data-time="1h">1小时</button>
+                <button class="time-btn active" data-time="4h">4小时</button>
+                <button class="time-btn" data-time="1d">1天</button>
+            </div>
+
+            <header class="top-bar">
+                <div class="mobile-controls">
+                    <button class="btn btn-secondary" onclick="toggleSidebar()">☰</button>
+                </div>
+
+                <div class="pair-info">
+                    <div class="pair-name" id="pairName">BTC/USDT</div>
+                    <div class="pair-price price-up" id="pairPrice">$42,350.00</div>
+                </div>
+
+                <div class="time-selector">
+                    <button class="time-btn" data-time="1m">1M</button>
+                    <button class="time-btn" data-time="5m">5M</button>
+                    <button class="time-btn" data-time="15m">15M</button>
+                    <button class="time-btn" data-time="1h">1H</button>
+                    <button class="time-btn active" data-time="4h">4H</button>
+                    <button class="time-btn" data-time="1d">1D</button>
+                </div>
+
+                <button class="btn btn-secondary" onclick="toggleRightPanel()">📈</button>
+            </header>
+
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="mainChart"></canvas>
+                    <div class="chart-tooltip" id="chartTooltip">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">时间</span>
+                            <span class="tooltip-value" id="tooltipTime">-</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">开盘</span>
+                            <span class="tooltip-value" id="tooltipOpen">-</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">最高</span>
+                            <span class="tooltip-value" id="tooltipHigh">-</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">最低</span>
+                            <span class="tooltip-value" id="tooltipLow">-</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">收盘</span>
+                            <span class="tooltip-value" id="tooltipClose">-</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">成交量</span>
+                            <span class="tooltip-value" id="tooltipVolume">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="indicator-panels">
+                    <div class="indicator-panel">
+                        <div class="indicator-title">MA (均线指标)</div>
+                        <canvas id="maChart" class="indicator-canvas"></canvas>
+                    </div>
+                    <div class="indicator-panel">
+                        <div class="indicator-title">RSI (相对强弱)</div>
+                        <canvas id="rsiChart" class="indicator-canvas"></canvas>
+                    </div>
+                    <div class="indicator-panel">
+                        <div class="indicator-title">MACD</div>
+                        <canvas id="macdChart" class="indicator-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧面板 -->
+        <aside class="right-panel" id="rightPanel">
+            <div class="panel-tabs">
+                <div class="panel-tab active" data-tab="metrics">指标</div>
+                <div class="panel-tab" data-tab="trades">交易</div>
+                <div class="panel-tab" data-tab="positions">持仓</div>
+            </div>
+
+            <div class="panel-content">
+                <!-- 指标面板 -->
+                <div class="tab-content active" id="metricsContent">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">总收益率</div>
+                            <div class="metric-value metric-positive" id="totalReturn">+5.08%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">夏普比率</div>
+                            <div class="metric-value" id="sharpeRatio">0.14</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">最大回撤</div>
+                            <div class="metric-value metric-negative" id="maxDrawdown">-10.11%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">胜率</div>
+                            <div class="metric-value" id="winRate">58.23%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">总交易数</div>
+                            <div class="metric-value" id="totalTrades">159</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">盈亏比</div>
+                            <div class="metric-value" id="profitFactor">1.25</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">资金曲线</div>
+                    <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px; height: 150px;">
+                        <canvas id="equityChart" style="width: 100%; height: 100%;"></canvas>
+                    </div>
+                </div>
+
+                <!-- 交易面板 -->
+                <div class="tab-content" id="tradesContent" style="display: none;">
+                    <div class="trade-list" id="tradeList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 持仓面板 -->
+                <div class="tab-content" id="positionsContent" style="display: none;">
+                    <div class="position-list" id="positionList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="sidebar-overlay" id="rightPanelOverlay" onclick="toggleRightPanel()"></div>
+
+        <!-- 移动端导航 -->
+        <nav class="mobile-nav">
+            <div class="mobile-nav-item active" onclick="showSection('chart')">
+                <div class="mobile-nav-icon">📊</div>
+                <div class="mobile-nav-label">图表</div>
+            </div>
+            <div class="mobile-nav-item" onclick="showSection('metrics')">
+                <div class="mobile-nav-icon">📈</div>
+                <div class="mobile-nav-label">指标</div>
+            </div>
+            <div class="mobile-nav-item" onclick="showSection('trades')">
+                <div class="mobile-nav-icon">📋</div>
+                <div class="mobile-nav-label">交易</div>
+            </div>
+            <div class="mobile-nav-item" onclick="showSection('settings')">
+                <div class="mobile-nav-icon">⚙️</div>
+                <div class="mobile-nav-label">设置</div>
+            </div>
+        </nav>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        // 全局状态
+        const state = {
+            klines: [],
+            trades: [],
+            positions: [],
+            results: {},
+            equityCurve: [],
+            currentPair: 'BTCUSDT',
+            currentStrategy: 'ma_crossover',
+            currentTimeframe: '4h',
+            chartOffset: 0,
+            chartScale: 1,
+            isDragging: false,
+            lastMouseX: 0
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            loadSampleData();
+            setupEventListeners();
+            generateTradeList();
+            generatePositionList();
+        });
+
+        // 生成模拟K线数据
+        function generateKlines(count = 500) {
+            const klines = [];
+            let basePrice = 42000;
+            const now = Date.now();
+            const interval = 4 * 60 * 60 * 1000; // 4小时
+
+            for (let i = 0; i < count; i++) {
+                const change = (Math.random() - 0.48) * 0.03;
+                const open = basePrice;
+                const close = basePrice * (1 + change);
+                const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+                const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+                const volume = Math.random() * 1000 + 500;
+
+                klines.push({
+                    timestamp: now - (count - i) * interval,
+                    open: open,
+                    high: high,
+                    low: low,
+                    close: close,
+                    volume: volume
+                });
+
+                basePrice = close;
+            }
+
+            return klines;
+        }
+
+        // 加载示例数据
+        function loadSampleData() {
+            state.klines = generateKlines(500);
+            state.equityCurve = generateEquityCurve();
+            state.results = {
+                initialCapital: 10000,
+                finalCapital: 10508.43,
+                totalReturn: 5.08,
+                sharpeRatio: 0.14,
+                maxDrawdown: -10.11,
+                winRate: 58.23,
+                totalTrades: 159,
+                profitFactor: 1.25
+            };
+
+            updateMetricsDisplay();
+            drawChart();
+            drawIndicators();
+            drawEquityChart();
+        }
+
+        // 生成资金曲线
+        function generateEquityCurve() {
+            const curve = [];
+            let equity = 10000;
+            const count = state.klines.length;
+
+            for (let i = 0; i < count; i++) {
+                const change = (Math.random() - 0.45) * 0.002;
+                equity *= (1 + change);
+                curve.push({
+                    timestamp: state.klines[i].timestamp,
+                    equity: equity
+                });
+            }
+
+            return curve;
+        }
+
+        // 生成交易列表
+        function generateTrades(count = 20) {
+            const trades = [];
+            const pairs = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT'];
+
+            for (let i = 0; i < count; i++) {
+                const timestamp = Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000;
+                const pair = pairs[Math.floor(Math.random() * pairs.length)];
+                const price = pair === 'BTCUSDT' ? 42000 : pair === 'ETHUSDT' ? 2500 : 350;
+                const quantity = Math.random() * 0.5 + 0.01;
+                const side = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                const pnl = side === 'SELL' ? (Math.random() - 0.3) * 200 : 0;
+
+                trades.push({
+                    id: `trade_${i}`,
+                    timestamp: timestamp,
+                    pair: pair,
+                    side: side,
+                    price: price * (1 + (Math.random() - 0.5) * 0.1),
+                    quantity: quantity,
+                    pnl: pnl
+                });
+            }
+
+            return trades.sort((a, b) => b.timestamp - a.timestamp);
+        }
+
+        // 生成持仓列表
+        function generatePositions() {
+            return [
+                {
+                    symbol: 'BTCUSDT',
+                    side: 'LONG',
+                    quantity: 0.15,
+                    entryPrice: 41800,
+                    currentPrice: 42350,
+                    pnl: 82.50,
+                    pnlPercent: 1.32
+                },
+                {
+                    symbol: 'ETHUSDT',
+                    side: 'LONG',
+                    quantity: 2.5,
+                    entryPrice: 2450,
+                    currentPrice: 2480,
+                    pnl: 75.00,
+                    pnlPercent: 1.22
+                }
+            ];
+        }
+
+        // 初始化图表
+        function initChart() {
+            const canvas = document.getElementById('mainChart');
+            const container = canvas.parentElement;
+
+            function resize() {
+                canvas.width = container.clientWidth * window.devicePixelRatio;
+                canvas.height = container.clientHeight * window.devicePixelRatio;
+                canvas.style.width = container.clientWidth + 'px';
+                canvas.style.height = container.clientHeight + 'px';
+                const ctx = canvas.getContext('2d');
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                drawChart();
+            }
+
+            resize();
+            window.addEventListener('resize', resize);
+        }
+
+        // 绘制K线图
+        function drawChart() {
+            const canvas = document.getElementById('mainChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (state.klines.length === 0) return;
+
+            const padding = { top: 20, right: 80, bottom: 30, left: 10 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const visibleBars = Math.min(100, state.klines.length);
+            const barWidth = chartWidth / visibleBars * 0.8;
+            const barSpacing = chartWidth / visibleBars;
+
+            let minPrice = Infinity, maxPrice = -Infinity;
+            let maxVolume = 0;
+
+            const startIndex = Math.max(0, state.klines.length - visibleBars - state.chartOffset);
+            const endIndex = Math.min(state.klines.length, startIndex + visibleBars);
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const k = state.klines[i];
+                minPrice = Math.min(minPrice, k.low);
+                maxPrice = Math.max(maxPrice, k.high);
+                maxVolume = Math.max(maxVolume, k.volume);
+            }
+
+            const priceRange = maxPrice - minPrice;
+            minPrice -= priceRange * 0.05;
+            maxPrice += priceRange * 0.05;
+
+            const priceToY = (price) => padding.top + chartHeight * (1 - (price - minPrice) / (maxPrice - minPrice));
+            const volumeToY = (vol) => height - padding.bottom - (height - padding.top - padding.bottom) * 0.2 * (vol / maxVolume);
+            const indexToX = (i) => padding.left + (i - startIndex) * barSpacing + barSpacing / 2;
+
+            // 绘制网格
+            ctx.strokeStyle = '#1e222d';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding.top + (chartHeight * i / 5);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+
+                const price = maxPrice - (maxPrice - minPrice) * i / 5;
+                ctx.fillStyle = '#787b86';
+                ctx.font = '11px "DIN Alternate", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('$' + price.toFixed(0), width - padding.right + 5, y + 4);
+            }
+
+            // 绘制K线
+            for (let i = startIndex; i < endIndex; i++) {
+                const k = state.klines[i];
+                const x = indexToX(i);
+                const isUp = k.close >= k.open;
+                const color = isUp ? '#26A69A' : '#EF5350';
+
+                // 烛身
+                const openY = priceToY(k.open);
+                const closeY = priceToY(k.close);
+                const bodyTop = Math.min(openY, closeY);
+                const bodyHeight = Math.max(1, Math.abs(closeY - openY));
+
+                ctx.fillStyle = color;
+                ctx.fillRect(x - barWidth / 2, bodyTop, barWidth, bodyHeight);
+
+                // 上下影线
+                ctx.beginPath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+                ctx.moveTo(x, priceToY(k.high));
+                ctx.lineTo(x, priceToY(k.low));
+                ctx.stroke();
+
+                // 成交量柱
+                const volumeHeight = height - padding.bottom - volumeToY(k.volume);
+                ctx.fillStyle = isUp ? 'rgba(38, 166, 154, 0.3)' : 'rgba(239, 83, 80, 0.3)';
+                ctx.fillRect(x - barWidth / 2, volumeToY(k.volume), barWidth, volumeHeight);
+            }
+
+            // 绘制MA线
+            drawMALines(ctx, startIndex, endIndex, indexToX, priceToY);
+
+            // 绘制买卖信号
+            drawTradeSignals(ctx, startIndex, endIndex, indexToX, priceToY);
+        }
+
+        // 绘制均线
+        function drawMALines(ctx, startIndex, endIndex, indexToX, priceToY) {
+            const shortPeriod = parseInt(document.getElementById('shortPeriod').value) || 10;
+            const longPeriod = parseInt(document.getElementById('longPeriod').value) || 30;
+
+            const shortMA = calculateMA(state.klines, shortPeriod);
+            const longMA = calculateMA(state.klines, longPeriod);
+
+            // 短期均线
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            let started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (shortMA[i]) {
+                    const x = indexToX(i);
+                    const y = priceToY(shortMA[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // 长期均线
+            ctx.strokeStyle = '#FF9800';
+            ctx.beginPath();
+            started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (longMA[i]) {
+                    const x = indexToX(i);
+                    const y = priceToY(longMA[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // 绘制图例
+            ctx.fillStyle = '#2962FF';
+            ctx.fillRect(70, 8, 15, 3);
+            ctx.fillStyle = '#D1D4DC';
+            ctx.font = '11px "PingFang SC", sans-serif';
+            ctx.fillText(`MA${shortPeriod}`, 90, 12);
+
+            ctx.fillStyle = '#FF9800';
+            ctx.fillRect(130, 8, 15, 3);
+            ctx.fillStyle = '#D1D4DC';
+            ctx.fillText(`MA${longPeriod}`, 150, 12);
+        }
+
+        // 计算均线
+        function calculateMA(data, period) {
+            const ma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    ma.push(null);
+                } else {
+                    let sum = 0;
+                    for (let j = 0; j < period; j++) {
+                        sum += data[i - j].close;
+                    }
+                    ma.push(sum / period);
+                }
+            }
+            return ma;
+        }
+
+        // 绘制交易信号
+        function drawTradeSignals(ctx, startIndex, endIndex, indexToX, priceToY) {
+            for (const trade of state.trades) {
+                const index = state.klines.findIndex(k => Math.abs(k.timestamp - trade.timestamp) < 4 * 60 * 60 * 1000);
+                if (index >= startIndex && index < endIndex) {
+                    const x = indexToX(index);
+                    const y = priceToY(trade.price);
+
+                    ctx.beginPath();
+                    if (trade.side === 'BUY') {
+                        ctx.fillStyle = '#26A69A';
+                        ctx.moveTo(x, y - 8);
+                        ctx.lineTo(x - 6, y);
+                        ctx.lineTo(x + 6, y);
+                    } else {
+                        ctx.fillStyle = '#EF5350';
+                        ctx.moveTo(x, y + 8);
+                        ctx.lineTo(x - 6, y);
+                        ctx.lineTo(x + 6, y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        // 绘制指标面板
+        function drawIndicators() {
+            drawMAIndicator();
+            drawRSIIndicator();
+            drawMACDIndicator();
+        }
+
+        // MA指标
+        function drawMAIndicator() {
+            const canvas = document.getElementById('maChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const shortPeriod = parseInt(document.getElementById('shortPeriod').value) || 10;
+            const longPeriod = parseInt(document.getElementById('longPeriod').value) || 30;
+            const shortMA = calculateMA(state.klines, shortPeriod);
+            const longMA = calculateMA(state.klines, longPeriod);
+
+            const visibleBars = Math.min(100, state.klines.length);
+            const startIndex = Math.max(0, state.klines.length - visibleBars - state.chartOffset);
+            const endIndex = Math.min(state.klines.length, startIndex + visibleBars);
+            const chartWidth = width - 30;
+            const chartHeight = height - 10;
+            const barSpacing = chartWidth / visibleBars;
+
+            const allValues = [...shortMA.slice(startIndex, endIndex), ...longMA.slice(startIndex, endIndex)].filter(v => v);
+            const minVal = Math.min(...allValues);
+            const maxVal = Math.max(...allValues);
+            const range = maxVal - minVal || 1;
+
+            const valueToY = (val) => 5 + chartHeight * (1 - (val - minVal) / range);
+            const indexToX = (i) => 20 + (i - startIndex) * barSpacing + barSpacing / 2;
+
+            // MA Short
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            let started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (shortMA[i]) {
+                    const x = indexToX(i);
+                    const y = valueToY(shortMA[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // MA Long
+            ctx.strokeStyle = '#FF9800';
+            ctx.beginPath();
+            started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (longMA[i]) {
+                    const x = indexToX(i);
+                    const y = valueToY(longMA[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        // RSI指标
+        function drawRSIIndicator() {
+            const canvas = document.getElementById('rsiChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const rsi = calculateRSI(state.klines, 14);
+            const visibleBars = Math.min(100, state.klines.length);
+            const startIndex = Math.max(0, state.klines.length - visibleBars - state.chartOffset);
+            const endIndex = Math.min(state.klines.length, startIndex + visibleBars);
+            const chartWidth = width - 30;
+            const chartHeight = height - 10;
+            const barSpacing = chartWidth / visibleBars;
+
+            // 绘制超买超卖线
+            ctx.strokeStyle = '#363a45';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+
+            ctx.beginPath();
+            ctx.moveTo(20, 5 + chartHeight * 0.3);
+            ctx.lineTo(width, 5 + chartHeight * 0.3);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(20, 5 + chartHeight * 0.7);
+            ctx.lineTo(width, 5 + chartHeight * 0.7);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+
+            // 绘制RSI线
+            ctx.strokeStyle = '#9C27B0';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            let started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (rsi[i]) {
+                    const x = 20 + (i - startIndex) * barSpacing + barSpacing / 2;
+                    const y = 5 + chartHeight * (1 - rsi[i] / 100);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // 标注当前值
+            if (rsi[endIndex - 1]) {
+                ctx.fillStyle = '#9C27B0';
+                ctx.font = '10px "DIN Alternate", monospace';
+                ctx.fillText(rsi[endIndex - 1].toFixed(1), width - 25, 5 + chartHeight * (1 - rsi[endIndex - 1] / 100));
+            }
+        }
+
+        // 计算RSI
+        function calculateRSI(data, period) {
+            const rsi = [];
+            const gains = [];
+            const losses = [];
+
+            for (let i = 1; i < data.length; i++) {
+                const change = data[i].close - data[i - 1].close;
+                gains.push(change > 0 ? change : 0);
+                losses.push(change < 0 ? -change : 0);
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                if (i < period) {
+                    rsi.push(null);
+                } else {
+                    const avgGain = gains.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+                    const avgLoss = losses.slice(i - period, i).reduce((a, b) => a + b, 0) / period;
+                    if (avgLoss === 0) {
+                        rsi.push(100);
+                    } else {
+                        const rs = avgGain / avgLoss;
+                        rsi.push(100 - (100 / (1 + rs)));
+                    }
+                }
+            }
+            return rsi;
+        }
+
+        // MACD指标
+        function drawMACDIndicator() {
+            const canvas = document.getElementById('macdChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const macd = calculateMACD(state.klines);
+            const visibleBars = Math.min(100, state.klines.length);
+            const startIndex = Math.max(0, state.klines.length - visibleBars - state.chartOffset);
+            const endIndex = Math.min(state.klines.length, startIndex + visibleBars);
+            const chartWidth = width - 30;
+            const chartHeight = height - 10;
+            const barSpacing = chartWidth / visibleBars;
+
+            const allValues = macd.macd.slice(startIndex, endIndex).concat(macd.signal.slice(startIndex, endIndex)).filter(v => v);
+            const minVal = Math.min(...allValues, 0);
+            const maxVal = Math.max(...allValues, 0);
+            const range = maxVal - minVal || 1;
+
+            const valueToY = (val) => 5 + chartHeight * (1 - (val - minVal) / range);
+            const zeroY = valueToY(0);
+            const indexToX = (i) => 20 + (i - startIndex) * barSpacing + barSpacing / 2;
+
+            // 绘制直方图
+            for (let i = startIndex; i < endIndex; i++) {
+                if (macd.histogram[i]) {
+                    const x = indexToX(i);
+                    const y = valueToY(macd.histogram[i]);
+                    const barHeight = Math.abs(y - zeroY);
+
+                    ctx.fillStyle = macd.histogram[i] >= 0 ? 'rgba(38, 166, 154, 0.6)' : 'rgba(239, 83, 80, 0.6)';
+                    ctx.fillRect(x - barSpacing * 0.4, macd.histogram[i] >= 0 ? y : zeroY, barSpacing * 0.8, barHeight);
+                }
+            }
+
+            // MACD线
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            let started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (macd.macd[i]) {
+                    const x = indexToX(i);
+                    const y = valueToY(macd.macd[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // Signal线
+            ctx.strokeStyle = '#FF9800';
+            ctx.beginPath();
+            started = false;
+            for (let i = startIndex; i < endIndex; i++) {
+                if (macd.signal[i]) {
+                    const x = indexToX(i);
+                    const y = valueToY(macd.signal[i]);
+                    if (!started) {
+                        ctx.moveTo(x, y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 计算MACD
+        function calculateMACD(data, fast = 12, slow = 26, signal = 9) {
+            const ema = (data, period) => {
+                const k = 2 / (period + 1);
+                const emaValues = [data[0].close];
+                for (let i = 1; i < data.length; i++) {
+                    emaValues.push(data[i].close * k + emaValues[i - 1] * (1 - k));
+                }
+                return emaValues;
+            };
+
+            const emaFast = ema(data, fast);
+            const emaSlow = ema(data, slow);
+
+            const macdLine = emaFast.map((v, i) => v - emaSlow[i]);
+            const signalLine = ema(macdLine.map((v, i) => ({ close: v })), signal).map((v, i) => v);
+            const histogram = macdLine.map((v, i) => v - (signalLine[i] || 0));
+
+            return {
+                macd: macdLine,
+                signal: signalLine,
+                histogram: histogram
+            };
+        }
+
+        // 绘制资金曲线
+        function drawEquityChart() {
+            const canvas = document.getElementById('equityChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (state.equityCurve.length === 0) return;
+
+            const visibleBars = Math.min(100, state.equityCurve.length);
+            const startIndex = Math.max(0, state.equityCurve.length - visibleBars - state.chartOffset);
+            const endIndex = Math.min(state.equityCurve.length, startIndex + visibleBars);
+
+            const values = state.equityCurve.slice(startIndex, endIndex).map(e => e.equity);
+            const minVal = Math.min(...values);
+            const maxVal = Math.max(...values);
+            const range = maxVal - minVal || 1;
+
+            const chartWidth = width - 40;
+            const chartHeight = height - 20;
+            const stepX = chartWidth / (visibleBars - 1);
+
+            const xToY = (val) => 10 + chartHeight * (1 - (val - minVal) / range);
+
+            // 绘制渐变填充
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, 'rgba(41, 98, 255, 0.3)');
+            gradient.addColorStop(1, 'rgba(41, 98, 255, 0)');
+
+            ctx.beginPath();
+            ctx.moveTo(20, height - 10);
+            for (let i = 0; i < values.length; i++) {
+                const x = 20 + i * stepX;
+                const y = xToY(values[i]);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(20 + (values.length - 1) * stepX, height - 10);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // 绘制线条
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < values.length; i++) {
+                const x = 20 + i * stepX;
+                const y = xToY(values[i]);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 更新指标显示
+        function updateMetricsDisplay() {
+            document.getElementById('totalReturn').textContent = (state.results.totalReturn >= 0 ? '+' : '') + state.results.totalReturn.toFixed(2) + '%';
+            document.getElementById('totalReturn').className = 'metric-value ' + (state.results.totalReturn >= 0 ? 'metric-positive' : 'metric-negative');
+
+            document.getElementById('sharpeRatio').textContent = state.results.sharpeRatio.toFixed(2);
+            document.getElementById('maxDrawdown').textContent = state.results.maxDrawdown.toFixed(2) + '%';
+            document.getElementById('winRate').textContent = state.results.winRate.toFixed(2) + '%';
+            document.getElementById('totalTrades').textContent = state.results.totalTrades;
+            document.getElementById('profitFactor').textContent = state.results.profitFactor.toFixed(2);
+        }
+
+        // 生成交易列表HTML
+        function generateTradeListHTML(trades) {
+            return trades.map(trade => `
+                <div class="trade-item">
+                    <div class="trade-side ${trade.side.toLowerCase()}">${trade.side === 'BUY' ? '买入' : '卖出'}</div>
+                    <div class="trade-info">
+                        <div class="trade-pair">${trade.pair}</div>
+                        <div class="trade-date">${new Date(trade.timestamp).toLocaleDateString('zh-CN')}</div>
+                    </div>
+                    <div class="trade-value">
+                        <div class="trade-price">$${trade.price.toFixed(2)}</div>
+                        <div class="trade-pnl ${trade.pnl >= 0 ? 'metric-positive' : 'metric-negative'}">
+                            ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 生成持仓列表HTML
+        function generatePositionListHTML(positions) {
+            return positions.map(pos => `
+                <div class="position-item">
+                    <div class="position-header">
+                        <span class="position-symbol">${pos.symbol}</span>
+                        <span class="position-side ${pos.side.toLowerCase()}">${pos.side === 'LONG' ? '多' : '空'}</span>
+                    </div>
+                    <div class="position-details">
+                        <div class="position-detail">
+                            <div class="position-detail-label">数量</div>
+                            <div class="position-detail-value">${pos.quantity}</div>
+                        </div>
+                        <div class="position-detail">
+                            <div class="position-detail-label">开仓价</div>
+                            <div class="position-detail-value">$${pos.entryPrice.toFixed(2)}</div>
+                        </div>
+                        <div class="position-detail">
+                            <div class="position-detail-label">当前价</div>
+                            <div class="position-detail-value">$${pos.currentPrice.toFixed(2)}</div>
+                        </div>
+                        <div class="position-detail">
+                            <div class="position-detail-label">盈亏</div>
+                            <div class="position-detail-value ${pos.pnl >= 0 ? 'metric-positive' : 'metric-negative'}">
+                                ${pos.pnl >= 0 ? '+' : ''}$${pos.pnl.toFixed(2)}
+                            </div>
+                        </div>
+                        <div class="position-detail">
+                            <div class="position-detail-label">收益率</div>
+                            <div class="position-detail-value ${pos.pnlPercent >= 0 ? 'metric-positive' : 'metric-negative'}">
+                                ${pos.pnlPercent >= 0 ? '+' : ''}${pos.pnlPercent.toFixed(2)}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 生成交易列表
+        function generateTradeList() {
+            state.trades = generateTrades(30);
+            document.getElementById('tradeList').innerHTML = generateTradeListHTML(state.trades);
+        }
+
+        // 生成持仓列表
+        function generatePositionList() {
+            state.positions = generatePositions();
+            document.getElementById('positionList').innerHTML = generatePositionListHTML(state.positions);
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 时间框架选择
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.currentTimeframe = btn.dataset.time;
+                    state.chartOffset = 0;
+                    loadSampleData();
+                });
+            });
+
+            // 面板切换
+            document.querySelectorAll('.panel-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.tab + 'Content').style.display = 'block';
+                });
+            });
+
+            // 策略选择
+            document.querySelectorAll('[data-strategy]').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('[data-strategy]').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    state.currentStrategy = card.dataset.strategy;
+                });
+            });
+
+            // 交易对选择
+            document.querySelectorAll('[data-pair]').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('[data-pair]').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    state.currentPair = card.dataset.pair;
+                    document.getElementById('pairName').textContent = card.querySelector('.strategy-name').textContent;
+                    loadSampleData();
+                });
+            });
+
+            // 图表交互
+            const chartCanvas = document.getElementById('mainChart');
+            const tooltip = document.getElementById('chartTooltip');
+
+            chartCanvas.addEventListener('mousemove', (e) => {
+                const rect = chartCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const visibleBars = Math.min(100, state.klines.length);
+                const startIndex = Math.max(0, state.klines.length - visibleBars - state.chartOffset);
+                const chartWidth = rect.width - 90;
+                const barSpacing = chartWidth / visibleBars;
+
+                const index = Math.floor((x - 10) / barSpacing) + startIndex;
+
+                if (index >= 0 && index < state.klines.length) {
+                    const k = state.klines[index];
+                    const isUp = k.close >= k.open;
+
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY - 100) + 'px';
+
+                    document.getElementById('tooltipTime').textContent = new Date(k.timestamp).toLocaleString('zh-CN');
+                    document.getElementById('tooltipOpen').textContent = '$' + k.open.toFixed(2);
+                    document.getElementById('tooltipHigh').textContent = '$' + k.high.toFixed(2);
+                    document.getElementById('tooltipLow').textContent = '$' + k.low.toFixed(2);
+                    document.getElementById('tooltipClose').textContent = '$' + k.close.toFixed(2);
+                    document.getElementById('tooltipClose').style.color = isUp ? '#26A69A' : '#EF5350';
+                    document.getElementById('tooltipVolume').textContent = k.volume.toFixed(2);
+                }
+            });
+
+            chartCanvas.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+
+            // 缩放和平移
+            chartCanvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    state.chartScale = Math.min(2, state.chartScale * 1.1);
+                } else {
+                    state.chartScale = Math.max(0.5, state.chartScale / 1.1);
+                }
+                drawChart();
+                drawIndicators();
+            });
+
+            chartCanvas.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                state.lastMouseX = e.clientX;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (state.isDragging) {
+                    const delta = e.clientX - state.lastMouseX;
+                    state.chartOffset = Math.max(0, state.chartOffset - Math.floor(delta / 5));
+                    state.lastMouseX = e.clientX;
+                    drawChart();
+                    drawIndicators();
+                    drawEquityChart();
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                state.isDragging = false;
+            });
+        }
+
+        // 切换侧边栏
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // 切换右侧面板
+        function toggleRightPanel() {
+            const panel = document.getElementById('rightPanel');
+            const overlay = document.getElementById('rightPanelOverlay');
+            panel.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+
+        // 显示部分
+        function showSection(section) {
+            document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            if (section === 'chart') {
+                toggleSidebar();
+            } else if (section === 'metrics' || section === 'trades' || section === 'settings') {
+                document.getElementById('rightPanel').classList.add('open');
+                document.getElementById('rightPanelOverlay').classList.add('open');
+                document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                document.querySelector(`[data-tab="${section}"]`).classList.add('active');
+                document.getElementById(section + 'Content').style.display = 'block';
+            }
+        }
+
+        // 运行回测
+        function runBacktest() {
+            showToast('正在运行回测...', 'info');
+
+            setTimeout(() => {
+                state.results = {
+                    initialCapital: parseFloat(document.getElementById('initialCapital').value) || 10000,
+                    finalCapital: parseFloat(document.getElementById('initialCapital').value) * (1 + (Math.random() - 0.3) * 0.2),
+                    totalReturn: (Math.random() - 0.3) * 50,
+                    sharpeRatio: (Math.random() - 0.3) * 2,
+                    maxDrawdown: -(Math.random() * 20),
+                    winRate: 40 + Math.random() * 30,
+                    totalTrades: Math.floor(50 + Math.random() * 200),
+                    profitFactor: 0.8 + Math.random() * 1
+                };
+
+                state.results.totalReturn = (state.results.finalCapital - state.results.initialCapital) / state.results.initialCapital * 100;
+
+                updateMetricsDisplay();
+                drawEquityChart();
+                generateTradeList();
+                showToast('回测完成！', 'success');
+            }, 1500);
+        }
+
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
