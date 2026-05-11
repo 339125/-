@@ -64,7 +64,7 @@ class BinanceAdapter(BaseExchangeAdapter):
         return None
 
     def get_klines(self, symbol: str, interval: str, start_time: Optional[int] = None,
-                   end_time: Optional[int] = None, limit: int = 500) -> List[Dict[str, Any]]:
+                   end_time: Optional[int] = None, limit: int = 10000) -> List[Dict[str, Any]]:
         params = {
             'symbol': symbol,
             'interval': interval,

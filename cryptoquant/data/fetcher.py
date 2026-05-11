@@ -13,7 +13,7 @@ class MarketDataFetcher:
     def fetch_klines(self, symbol: str, interval: str, 
                      start_date: Optional[str] = None,
                      end_date: Optional[str] = None,
-                     limit: int = 1000,
+                     limit: int = 10000,
                      use_cache: bool = True) -> List[Candlestick]:
         start_time = None
         end_time = None
@@ -72,7 +72,7 @@ class MarketDataFetcher:
     def fetch_klines_dataframe(self, symbol: str, interval: str,
                                start_date: Optional[str] = None,
                                end_date: Optional[str] = None,
-                               limit: int = 1000) -> pd.DataFrame:
+                               limit: int = 10000) -> pd.DataFrame:
         klines = self.fetch_klines(symbol, interval, start_date, end_date, limit)
 
         if not klines:

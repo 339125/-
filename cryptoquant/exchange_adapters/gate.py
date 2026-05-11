@@ -74,7 +74,7 @@ class GateAdapter(BaseExchangeAdapter):
         return None
 
     def get_klines(self, symbol: str, interval: str, start_time: Optional[int] = None,
-                   end_time: Optional[int] = None, limit: int = 500) -> List[Dict[str, Any]]:
+                   end_time: Optional[int] = None, limit: int = 10000) -> List[Dict[str, Any]]:
         interval_map = {
             '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
             '1h': '1h', '2h': '2h', '4h': '4h', '6h': '6h',
